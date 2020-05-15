@@ -6,21 +6,14 @@
 #include <stdio.h>
 #include <string>
 #include <SDL_image.h>
+#include <vector>
+#include <iostream>
+#include <random>
 
 //Screen dimension constants
 const int SCREEN_WIDTH = 480;
 const int SCREEN_HEIGHT = 480;
 
-//Key press surfaces constants
-enum KeyPressSurfaces
-{
-	KEY_PRESS_SURFACE_DEFAULT,
-	KEY_PRESS_SURFACE_UP,
-	KEY_PRESS_SURFACE_DOWN,
-	KEY_PRESS_SURFACE_LEFT,
-	KEY_PRESS_SURFACE_RIGHT,
-	KEY_PRESS_SURFACE_TOTAL
-};
 
 //Starts up SDL and creates window
 bool init();
@@ -40,11 +33,28 @@ SDL_Window* gWindow = NULL;
 //The surface contained by the window
 SDL_Surface* gScreenSurface = NULL;
 
+//stores the correctColor that a given surface is displaying.
+std::string correctColor = "";
+
+
 //The images that correspond to a keypress
-SDL_Surface* gKeyPressSurfaces[ KEY_PRESS_SURFACE_TOTAL ];
+std::vector<SDL_Surface *> gKeyPressSurfaces;
+
+//the corresponding colors
+std::vector<std::string> correspondingColor;
 
 //Current displayed image
 SDL_Surface* gCurrentSurface = NULL;
+
+//obtain a random num from hardware
+std::random_device rd;
+
+std::mt19937 eng(rd());
+
+std::uniform_int_distribution<> distr(1, 17);
+
+int score = 0;
+
 
 bool init()
 {
@@ -60,7 +70,7 @@ bool init()
 	else
 	{
 		//Create window
-		gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+		gWindow = SDL_CreateWindow( "Color Reflex Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
 		if( gWindow == NULL )
 		{
 			printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
@@ -70,6 +80,10 @@ bool init()
 		{
 			//Get window surface
 			gScreenSurface = SDL_GetWindowSurface( gWindow );
+			gKeyPressSurfaces.reserve(17);
+			gKeyPressSurfaces.resize(17);
+			correspondingColor.reserve(17);
+			correspondingColor.resize(17);
 		}
 	}
 	
@@ -82,53 +96,78 @@ bool loadMedia()
 	bool success = true;
 	
 	//Load default surface
-	gKeyPressSurfaces[ KEY_PRESS_SURFACE_DEFAULT ] = loadSurface( "press.bmp" );
-	if( gKeyPressSurfaces[ KEY_PRESS_SURFACE_DEFAULT ] == NULL )
+	gKeyPressSurfaces[0] = loadSurface( "press.bmp" );
+	if( gKeyPressSurfaces[0] == NULL )
 	{
 		printf( "Failed to load default image!\n" );
 		success = false;
 	}
 	
-	//Load up surface
-	gKeyPressSurfaces[ KEY_PRESS_SURFACE_UP ] = loadSurface("yellow.png");
+	
+	//Load up other surfaces.
+	gKeyPressSurfaces[1] = loadSurface("./colorReflexGamePics/yellow.png");
+	correspondingColor[1] = "yellow";
+	
+	gKeyPressSurfaces[2] = loadSurface("./colorReflexGamePics/green.png");
+	correspondingColor[2] = "green";
+	
+	gKeyPressSurfaces[3] = loadSurface("./colorReflexGamePics/pink.png");
+	correspondingColor[3] = "pink";
+	
+	gKeyPressSurfaces[4] = loadSurface("./colorReflexGamePics/red.png");
+	correspondingColor[4] = "red";
+	
+	gKeyPressSurfaces[5] = loadSurface("./colorReflexGamePics/white.png");
+	correspondingColor[5] = "white";
+	
+	gKeyPressSurfaces[6] = loadSurface("./colorReflexGamePics/blue.png");
+	correspondingColor[6] = "blue";
+
+	gKeyPressSurfaces[7] = loadSurface("./colorReflexGamePics/green1.png");
+	correspondingColor[7] = "green";
+	
+	gKeyPressSurfaces[8] = loadSurface("./colorReflexGamePics/pink1.png");
+	correspondingColor[8] = "pink";
+	
+	gKeyPressSurfaces[9] = loadSurface("./colorReflexGamePics/red1.png");
+	correspondingColor[9] = "red";
+
+	gKeyPressSurfaces[10] = loadSurface("./colorReflexGamePics/red2.png");
+	correspondingColor[10] = "red";
+
+	gKeyPressSurfaces[11] = loadSurface("./colorReflexGamePics/white1.png");
+	correspondingColor[11] = "white";
+
+	gKeyPressSurfaces[12] = loadSurface("./colorReflexGamePics/white2.png");
+	correspondingColor[12] = "white";
+
+	gKeyPressSurfaces[13] = loadSurface("./colorReflexGamePics/white3.png");
+	correspondingColor[13] = "white";
+
+	gKeyPressSurfaces[14] = loadSurface("./colorReflexGamePics/yellow1.png");
+	correspondingColor[14] = "yellow";
+
+	gKeyPressSurfaces[15] = loadSurface("./colorReflexGamePics/yellow2.png");
+	correspondingColor[15] = "yellow";
+
+	gKeyPressSurfaces[16] = loadSurface("./colorReflexGamePics/blue1.png");
+	correspondingColor[16] = "blue";
+
+	
+	
+
+	
 ;
-	if( gKeyPressSurfaces[ KEY_PRESS_SURFACE_UP ] == NULL )
-	{
-		printf( "Failed to load up image!\n" );
-		success = false;
-	}
 	
-	//Load down surface
-	gKeyPressSurfaces[ KEY_PRESS_SURFACE_DOWN ] = loadSurface("black.png");
-	if( gKeyPressSurfaces[ KEY_PRESS_SURFACE_DOWN ] == NULL )
-	{
-		printf( "Failed to load down image!\n" );
-		success = false;
-	}
-	
-	//Load left surface
-	gKeyPressSurfaces[ KEY_PRESS_SURFACE_LEFT ] = loadSurface( "left.bmp" );
-	if( gKeyPressSurfaces[ KEY_PRESS_SURFACE_LEFT ] == NULL )
-	{
-		printf( "Failed to load left image!\n" );
-		success = false;
-	}
-	
-	//Load right surface
-	gKeyPressSurfaces[ KEY_PRESS_SURFACE_RIGHT ] = loadSurface( "right.bmp" );
-	if( gKeyPressSurfaces[ KEY_PRESS_SURFACE_RIGHT ] == NULL )
-	{
-		printf( "Failed to load right image!\n" );
-		success = false;
-	}
 	
 	return success;
 }
 
 void close()
 {
+	std::cout << "Your final score is: " << score << "\n";
 	//Deallocate surfaces
-	for( int i = 0; i < KEY_PRESS_SURFACE_TOTAL; ++i )
+	for( int i = 0; i < gKeyPressSurfaces.size(); ++i )
 	{
 		SDL_FreeSurface( gKeyPressSurfaces[ i ] );
 		gKeyPressSurfaces[ i ] = NULL;
@@ -154,6 +193,32 @@ SDL_Surface* loadSurface( std::string path )
 	return loadedSurface;
 }
 
+bool correct_color_pressed(const std::string& color_in, const std::string & current_correct_color){
+	
+	bool flag = false;
+	if(current_correct_color == color_in)
+		flag = true;
+	
+	if(flag)
+		std::cout << "the correct color was pressed\n";
+	
+	if(not flag){
+		std::cout << "you pressed " << color_in[0] << " instead of " << current_correct_color[0] << "\n";
+		std::cout << "the correct color was NOT pressed\n";
+		
+	}//if not flag
+
+	
+	return flag;
+}
+
+void generateRandomSurface(){
+	int randomInt = distr(eng);
+	std::cout << "randomInt is " << randomInt << "\n" ;
+	
+	gCurrentSurface = gKeyPressSurfaces[randomInt];
+	correctColor = correspondingColor[randomInt];
+}
 
 int main( int argc, char* args[] )
 {
@@ -176,9 +241,10 @@ int main( int argc, char* args[] )
 			
 			//Event handler
 			SDL_Event e;
+			SDL_Event b;
 			
 			//Set default current surface
-			gCurrentSurface = gKeyPressSurfaces[ KEY_PRESS_SURFACE_DEFAULT ];
+			gCurrentSurface = gKeyPressSurfaces[0]; //this will show the up,down,right,left buttons
 			
 			//While application is running
 			while( !quit )
@@ -194,40 +260,99 @@ int main( int argc, char* args[] )
 					//User presses a key
 					else if( e.type == SDL_KEYDOWN )
 					{
-						//Select surfaces based on key press
-						switch( e.key.keysym.sym )
-						{
-							case SDLK_UP:
-								gCurrentSurface = gKeyPressSurfaces[ KEY_PRESS_SURFACE_UP ];
-//								SDL_FillRect(gScreenSurface, NULL, SDL_MapRGB(gScreenSurface->format, 255, 204, 0));
-//								SDL_UpdateWindowSurface(gWindow);
+						//select surfaces based on key press
+						auto keyPressed = e.key.keysym.sym;
+						if(keyPressed == SDLK_DOWN || keyPressed == SDLK_UP
+						   || keyPressed == SDLK_RIGHT || keyPressed == SDLK_LEFT){
+							
+							if(correctColor != ""){
+								quit = true;
+								std::cout << "user pressed the arrows consecutively\n" ;
 								break;
-								
-							case SDLK_DOWN:
-								gCurrentSurface = gKeyPressSurfaces[ KEY_PRESS_SURFACE_DOWN ];
-								break;
-								
-							case SDLK_LEFT:
-								gCurrentSurface = gKeyPressSurfaces[ KEY_PRESS_SURFACE_LEFT ];
-								break;
-								
-							case SDLK_RIGHT:
-								gCurrentSurface = gKeyPressSurfaces[ KEY_PRESS_SURFACE_RIGHT ];
-								break;
-								
-							default:
-								gCurrentSurface = gKeyPressSurfaces[ KEY_PRESS_SURFACE_DEFAULT ];
-								break;
-						}
+							}
+//							std::cout << "Key is being pressed "<< std::endl;
+							
+							generateRandomSurface();
+							
+							break;
+						}//if key pressed is the down or the up arrow.
+						
+						if(keyPressed == SDLK_r){
+//							std::cout << "'r' was pressed" << std::endl;
+							if( not correct_color_pressed("red", correctColor))
+								quit = true;
+
+							else{
+								++score;
+								generateRandomSurface();
+							}
+							
+							break;
+						}//if keyPressed is red.
+						
+						if(keyPressed == SDLK_w){
+							if(not correct_color_pressed("white", correctColor))
+								quit = true;
+							else{
+								++score;
+								generateRandomSurface();
+							}
+							break;
+							
+						}//if 'W' pressed
+						
+						if(keyPressed == SDLK_p){
+							if(not correct_color_pressed("pink", correctColor))
+								quit = true;
+							else{
+								++score;
+								generateRandomSurface();
+							}
+							break;
+						}//if 'P' pressed
+						
+						if(keyPressed == SDLK_y){
+							if(not correct_color_pressed("yellow", correctColor))
+								quit = true;
+							else{
+								++score;
+								generateRandomSurface();
+							}
+							break;
+						}//if 'Y' pressed
+						
+						if(keyPressed == SDLK_g){
+							if(not correct_color_pressed("green", correctColor))
+								quit = true;
+							else{
+								++score;
+								generateRandomSurface();
+							}
+							break;
+						}//if 'G' pressed
+						
+						if(keyPressed == SDLK_b){
+							if(not correct_color_pressed("blue", correctColor))
+								quit = true;
+							else{
+								++score;
+								generateRandomSurface();
+							}
+							break;
+						}//if 'B' pressed
+						
 					}
-				}
+				}//while PollEvent != 0;
 				
 				//Apply the current image
 				SDL_BlitSurface( gCurrentSurface, NULL, gScreenSurface, NULL );
 				
 				//Update the surface
 				SDL_UpdateWindowSurface( gWindow );
-			}
+//
+				
+				
+			}//until not quit
 		}
 	}
 	
