@@ -51,9 +51,16 @@ std::random_device rd;
 
 std::mt19937 eng(rd());
 
-std::uniform_int_distribution<> distr(1, 17);
+std::uniform_int_distribution<> distr(1, 16);
+
+int randomInt = distr(eng);
 
 int score = 0;
+
+bool arrowPressedYet = false;
+
+SDL_TimerID timerID = 0;
+
 
 
 bool init()
@@ -62,7 +69,7 @@ bool init()
 	bool success = true;
 	
 	//Initialize SDL
-	if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+	if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0 )
 	{
 		printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
 		success = false;
@@ -200,7 +207,7 @@ bool correct_color_pressed(const std::string& color_in, const std::string & curr
 		flag = true;
 	
 	if(flag)
-		std::cout << "the correct color was pressed\n";
+		std::cout << "the correct color: " << current_correct_color <<" was pressed\n";
 	
 	if(not flag){
 		std::cout << "you pressed " << color_in[0] << " instead of " << current_correct_color[0] << "\n";
@@ -213,12 +220,33 @@ bool correct_color_pressed(const std::string& color_in, const std::string & curr
 }
 
 void generateRandomSurface(){
-	int randomInt = distr(eng);
+	int tempInt = distr(eng);
+	while(tempInt == randomInt){
+		tempInt = distr(eng);
+	}//so that u don't get the same pic consecutively.
+	
+	randomInt = tempInt;
+	
 	std::cout << "randomInt is " << randomInt << "\n" ;
 	
 	gCurrentSurface = gKeyPressSurfaces[randomInt];
 	correctColor = correspondingColor[randomInt];
 }
+
+Uint32 callback(Uint32 interval, void* param){
+	//print callback message
+	printf("Callback called back with message: %s\n", (char*)param);
+	return 0;
+}
+
+void createAndResetTimer(){
+	if(arrowPressedYet == true){
+		std::cout << "debug0" << std::endl;
+		SDL_RemoveTimer(timerID);
+		timerID = SDL_AddTimer(2000, callback, (void*) "2 second waited!" );
+		}
+}
+
 
 int main( int argc, char* args[] )
 {
@@ -239,16 +267,22 @@ int main( int argc, char* args[] )
 			//Main loop flag
 			bool quit = false;
 			
+			
 			//Event handler
 			SDL_Event e;
-			SDL_Event b;
 			
 			//Set default current surface
-			gCurrentSurface = gKeyPressSurfaces[0]; //this will show the up,down,right,left buttons
+			gCurrentSurface = gKeyPressSurfaces[0]; //this will show the pic w/ up,down,right,left buttons
+			
 			
 			//While application is running
 			while( !quit )
 			{
+//				if(SDL_RemoveTimer(timerID) == SDL_TRUE){
+//					quit = true;
+//					break;
+//				}
+				
 				//Handle events on queue
 				while( SDL_PollEvent( &e ) != 0 )
 				{
@@ -262,6 +296,7 @@ int main( int argc, char* args[] )
 					{
 						//select surfaces based on key press
 						auto keyPressed = e.key.keysym.sym;
+						
 						if(keyPressed == SDLK_DOWN || keyPressed == SDLK_UP
 						   || keyPressed == SDLK_RIGHT || keyPressed == SDLK_LEFT){
 							
@@ -273,75 +308,132 @@ int main( int argc, char* args[] )
 //							std::cout << "Key is being pressed "<< std::endl;
 							
 							generateRandomSurface();
-							
+							arrowPressedYet = true;
+							createAndResetTimer();
 							break;
-						}//if key pressed is the down or the up arrow.
+						}//if key pressed is one of the four arrows.
+						
+						
 						
 						if(keyPressed == SDLK_r){
+							if(SDL_RemoveTimer(timerID) == SDL_FALSE){
+								std::cout << "debug2 "<< std::endl;
+
+								quit = true;
+								break;
+							}
 //							std::cout << "'r' was pressed" << std::endl;
+							
 							if( not correct_color_pressed("red", correctColor))
 								quit = true;
 
 							else{
 								++score;
 								generateRandomSurface();
+								createAndResetTimer();
 							}
 							
 							break;
 						}//if keyPressed is red.
 						
 						if(keyPressed == SDLK_w){
+							if(SDL_RemoveTimer(timerID) == SDL_FALSE){
+								std::cout << "debug3 "<< std::endl;
+
+								quit = true;
+								break;
+							}
+
 							if(not correct_color_pressed("white", correctColor))
 								quit = true;
 							else{
 								++score;
 								generateRandomSurface();
+								createAndResetTimer();
 							}
 							break;
 							
 						}//if 'W' pressed
 						
 						if(keyPressed == SDLK_p){
+							if(SDL_RemoveTimer(timerID) == SDL_FALSE){
+								std::cout << "debug4 "<< std::endl;
+
+								quit = true;
+								break;
+							}
+
 							if(not correct_color_pressed("pink", correctColor))
 								quit = true;
 							else{
 								++score;
 								generateRandomSurface();
+								createAndResetTimer();
 							}
 							break;
 						}//if 'P' pressed
 						
 						if(keyPressed == SDLK_y){
+							if(SDL_RemoveTimer(timerID) == SDL_FALSE){
+								std::cout << "debug5 "<< std::endl;
+
+								quit = true;
+								break;
+							}
+
 							if(not correct_color_pressed("yellow", correctColor))
 								quit = true;
 							else{
 								++score;
 								generateRandomSurface();
+								createAndResetTimer();
 							}
 							break;
 						}//if 'Y' pressed
 						
 						if(keyPressed == SDLK_g){
+							if(SDL_RemoveTimer(timerID) == SDL_FALSE){
+								std::cout << "debug6 "<< std::endl;
+
+								quit = true;
+								break;
+							}
+
 							if(not correct_color_pressed("green", correctColor))
 								quit = true;
 							else{
 								++score;
 								generateRandomSurface();
+								createAndResetTimer();
 							}
 							break;
 						}//if 'G' pressed
 						
 						if(keyPressed == SDLK_b){
+							if(SDL_RemoveTimer(timerID) == SDL_FALSE){
+								std::cout << "debug7 "<< std::endl;
+
+								quit = true;
+								break;
+							}
+
 							if(not correct_color_pressed("blue", correctColor))
 								quit = true;
 							else{
 								++score;
 								generateRandomSurface();
+								createAndResetTimer();
 							}
 							break;
 						}//if 'B' pressed
 						
-					}
+					}//else when a key is pressed.
+					
+//					if(arrowPressedYet == true){
+//						std::cout << "debug0" << std::endl;
+//						SDL_RemoveTimer(timerID);
+//						timerID = SDL_AddTimer( 1000, callback, (void*) "1 second waited!" );
+//					}
 				}//while PollEvent != 0;
 				
 				//Apply the current image
@@ -349,10 +441,15 @@ int main( int argc, char* args[] )
 				
 				//Update the surface
 				SDL_UpdateWindowSurface( gWindow );
-//
+//				if(arrowPressedYet == true){
+//					std::cout << "debug0" << std::endl;
+//					SDL_RemoveTimer(timerID);
+//					timerID = SDL_AddTimer( 1000, callback, (void*) "1 second waited!" );
+//				}
+
 				
 				
-			}//until not quit
+			}//while not quit
 		}
 	}
 	
