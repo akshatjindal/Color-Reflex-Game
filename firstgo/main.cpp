@@ -71,7 +71,9 @@ Uint32 skyblue = NULL;
 SDL_Color whiteColor = {255,255,255};
 
 SDL_Renderer * la_rend;
-
+SDL_Event e;
+const Uint8 * keyStates = NULL;
+bool quit = false;
 
 bool init()
 {
@@ -333,6 +335,48 @@ void displayReplayScreen(){
 	SDL_RenderPresent(la_rend);
 }
 
+while(poll event){
+	game()
+	finalscorescreen()
+	replayscreen()
+}
+
+bool userPressedOneOfTheArrows(){
+	assert(keyStates != NULL);
+	bool flag = false;
+	
+	if(keyStates[SDL_SCANCODE_UP] || keyStates[SDLK_DOWN]
+	   || keyStates[SDL_SCANCODE_RIGHT] || keyStates[SDL_SCANCODE_LEFT])
+		flag = true;
+	
+	return flag;
+}
+
+
+
+std::pair<bool,bool> game(){
+	
+	bool userWantsToExitGame = false;
+	bool user_lost_the_game = false;
+	
+	
+	keyStates = SDL_GetKeyboardState(NULL);
+	if(e.type == SDL_QUIT){userWantsToExitGame = true;}
+	
+	//		check if a certain letter or arrow has been PressedYet
+	//		render accordingly until player loses (Gets something wrong)
+	
+	if(not arrowPressedYet && userPressedOneOfTheArrows() == true){
+		generateRandomSurface(); createAndResetTimer();
+		arrowPressedYet = true;
+	}//if
+	
+	
+	
+	return std::make_pair(userWantsToExitGame, user_lost_the_game);
+	
+}
+
 int main( int argc, char* args[] )
 {
 	//Start up SDL and create window
@@ -349,256 +393,26 @@ int main( int argc, char* args[] )
 		}
 		else
 		{
-			//Event handler
-			SDL_Event e;
-			
-			//Main loop flag
 			bool replay = true;
-			
 			while(replay == true){
-				//Set default current surface
-				gCurrentSurface = gKeyPressSurfaces[0]; //this will show the pic w/ up,down,right,left buttons
-				bool quit = false;
-				correctColor = "";
-				score = 0;
-				//While application is running
-				while( quit == false )
-				{
-					
-					//Handle events on queue
-					while( SDL_PollEvent( &e ) != 0 )
-					{
-						//User requests quit
-						if( e.type == SDL_QUIT )
-						{
-							quit = true;
-							replay = false;
-						}
-						//User presses a key
-						else if( e.type == SDL_KEYDOWN )
-						{
-							//select surfaces based on key press
-							auto keyPressed = e.key.keysym.sym;
-							
-							if(keyPressed == SDLK_DOWN || keyPressed == SDLK_UP
-							   || keyPressed == SDLK_RIGHT || keyPressed == SDLK_LEFT){
-								
-								if(correctColor != ""){
-									quit = true;
-									std::cout << "user pressed the arrows consecutively or when they weren't supposed to \n" ;
-									break;
-								}
-								//							std::cout << "Key is being pressed "<< std::endl;
-								
-								generateRandomSurface();
-								arrowPressedYet = true;
-								createAndResetTimer();
-								break;
-							}//if key pressed is one of the four arrows.
-							
-							
-							
-							if(keyPressed == SDLK_r){
-								if(SDL_RemoveTimer(timerID) == SDL_FALSE){
-									std::cout << "debug red "<< std::endl;
-									
-									quit = true;
-									break;
-								}
-								//							std::cout << "'r' was pressed" << std::endl;
-								
-								if( not correct_color_pressed("red", correctColor))
-									quit = true;
-								
-								else{
-									++score;
-									generateRandomSurface();
-									createAndResetTimer();
-								}
-								
-								break;
-							}//if keyPressed is red.
-							
-							if(keyPressed == SDLK_w){
-								if(SDL_RemoveTimer(timerID) == SDL_FALSE){
-									std::cout << "debug white "<< std::endl;
-									
-									quit = true;
-									break;
-								}
-								
-								if(not correct_color_pressed("white", correctColor))
-									quit = true;
-								else{
-									++score;
-									generateRandomSurface();
-									createAndResetTimer();
-								}
-								break;
-								
-							}//if 'W' pressed
-							
-							if(keyPressed == SDLK_p){
-								if(SDL_RemoveTimer(timerID) == SDL_FALSE){
-									std::cout << "debug pink "<< std::endl;
-									
-									quit = true;
-									break;
-								}
-								
-								if(not correct_color_pressed("pink", correctColor))
-									quit = true;
-								else{
-									++score;
-									generateRandomSurface();
-									createAndResetTimer();
-								}
-								break;
-							}//if 'P' pressed
-							
-							if(keyPressed == SDLK_y){
-								if(SDL_RemoveTimer(timerID) == SDL_FALSE){
-									std::cout << "debug yellow"<< std::endl;
-									
-									quit = true;
-									break;
-								}
-								
-								if(not correct_color_pressed("yellow", correctColor))
-									quit = true;
-								else{
-									++score;
-									generateRandomSurface();
-									createAndResetTimer();
-								}
-								break;
-							}//if 'Y' pressed
-							
-							if(keyPressed == SDLK_g){
-								if(SDL_RemoveTimer(timerID) == SDL_FALSE){
-									std::cout << "debug6 "<< std::endl;
-									
-									quit = true;
-									break;
-								}
-								
-								if(not correct_color_pressed("green", correctColor))
-									quit = true;
-								else{
-									++score;
-									generateRandomSurface();
-									createAndResetTimer();
-								}
-								break;
-							}//if 'G' pressed
-							
-							if(keyPressed == SDLK_b){
-								if(SDL_RemoveTimer(timerID) == SDL_FALSE){
-									std::cout << "debug7 "<< std::endl;
-									
-									quit = true;
-									break;
-								}
-								
-								if(not correct_color_pressed("blue", correctColor))
-									quit = true;
-								else{
-									++score;
-									generateRandomSurface();
-									createAndResetTimer();
-								}
-								break;
-							}//if 'B' pressed
-							
-						}//else when a key is pressed.
-						
-					}//while PollEvent != 0;
-					
-					if(not replay) break;
-					
-					auto la_tex = SDL_CreateTextureFromSurface(la_rend, gCurrentSurface);
-					
-					SDL_RenderCopy(la_rend, la_tex, NULL, NULL);
-					SDL_DestroyTexture(la_tex); la_tex = NULL;
-					
-					SDL_RenderPresent(la_rend);
-				}//while quit == false
 				
-				if(not replay) break;
-				
-				SDL_Delay(500);
-				
-				bool finalScoreDisplayed = false;
-				bool passedTimeout = false;
-				Uint32 timeout = SDL_GetTicks() + 2500;
-				while(finalScoreDisplayed == false){
+				while(SDL_PollEvent(&e)){
 					
-					const Uint8 * keyStates = SDL_GetKeyboardState(NULL);
-					while(SDL_PollEvent(&e)){
-						if(e.type == SDL_QUIT){
-							finalScoreDisplayed = true;
-							replay = false;
-							break;
-						}
-						
-						if(keyStates[SDL_SCANCODE_ESCAPE]){
-							finalScoreDisplayed = true;
-							replay = false;
-							break;
-						}
-						
-						if(SDL_TICKS_PASSED(SDL_GetTicks(), timeout)){
-							std::cout << "2.5 secs have passed. \n";
-
-							passedTimeout = true;
-							finalScoreDisplayed = true;
-							break;
-						}//if sdl ticks passed.
-						
-						
-					}//while poll event
+					auto pair = game();
 					
-					if(not replay) break;
+					if(pair.first == true){
+						replay = false;
+						break;
+					}//if player wants to quit game.
 					
-					if(not finalScoreDisplayed)
-						displayFinalScore();
-					
-				}//while finalscoredisplayed != true
+					else{
+						if(pair.second){
+							displayFinalScore();
+							displayReplayScreen();
+						}//if player has lost the game
+					}//else if the player doesn't wanna quit game.
 				
-				if(not replay) break;
-				
-				bool replayScreenSeenByUser = false;
-				while(replayScreenSeenByUser == false){
-
-					while(SDL_PollEvent(&e)){
-						const Uint8 * keyStates = SDL_GetKeyboardState(NULL);
-						if(e.type == SDL_QUIT){
-							replayScreenSeenByUser = true;
-							replay = false;
-							break;
-						}
-
-						if(keyStates[SDL_SCANCODE_ESCAPE]){
-							replayScreenSeenByUser = true;
-							replay = false;
-							break;
-						}
-
-						if(keyStates[SDL_SCANCODE_R]){
-							replayScreenSeenByUser = true;
-							std::cout << "user has reqed to replay \n";
-							break;
-						}
-					}//while poll event.
-
-					if(not replay) break;
-
-					if(not replayScreenSeenByUser)
-						{displayReplayScreen();}
-
-
-				}//while not replayscreenshown.
-				
+				}//while poll event.
 				
 			}//while replay == true
 			
