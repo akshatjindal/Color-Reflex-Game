@@ -34,9 +34,6 @@ SDL_Surface* loadSurface(std::string path );
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
 
-//The surface contained by the window
-SDL_Surface* gScreenSurface = NULL;
-
 //stores the correctColor that a given surface is displaying.
 std::string correctColor = "";
 
@@ -68,9 +65,12 @@ bool arrowPressedYet = false;
 
 SDL_TimerID timerID = 0;
 
+SDL_TimerID timerTwo = 0;
 
 Uint32 skyblue = NULL;
 SDL_Color whiteColor = {255,255,255};
+
+SDL_Renderer * la_rend;
 
 
 bool init()
@@ -88,8 +88,9 @@ bool init()
 	else
 	{
 		
-		//Create window
-		gWindow = SDL_CreateWindow( "Color Reflex Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+		if(SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &gWindow, &la_rend) < 0){
+			std::cout << SDL_GetError() << std::endl;
+		}
 		if( gWindow == NULL )
 		{
 			printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
@@ -97,10 +98,6 @@ bool init()
 		}
 		else
 		{
-			//Get window surface
-			gScreenSurface = SDL_GetWindowSurface( gWindow );
-			skyblue=SDL_MapRGB(gScreenSurface->format, 65,193,193);
-
 			gKeyPressSurfaces.reserve(17);
 			gKeyPressSurfaces.resize(17);
 			correspondingColor.reserve(17);
@@ -268,12 +265,16 @@ void createAndResetTimer(){
 	if(not arrowPressedYet)
 		return ;
 	
-	std::cout << "debug0" << std::endl;
+	std::cout << "debug0 \n";
 	SDL_RemoveTimer(timerID);
 	timerID = SDL_AddTimer(TIMELIM * 1000, callback, (void*) "TIMELIM REACHED!" );
 }
 
-
+void createTimerTwo(){
+	std::cout << "debug timer two\n";
+	SDL_RemoveTimer(timerTwo);
+	timerTwo = SDL_AddTimer(3.0 * 1000, callback, (void*) "timer two called");
+}
 void displayFinalScore(){
 	//MARK: displayfinalscore()
 	//MARK: displayfinalscore()
@@ -281,9 +282,9 @@ void displayFinalScore(){
 
 	std::cout << "debug Final Score"<< "\n";
 	
-	SDL_FillRect(gCurrentSurface, NULL, skyblue);
-	SDL_BlitSurface(gCurrentSurface, NULL, gScreenSurface, NULL);
-
+	SDL_SetRenderDrawColor(la_rend, 65,193,193, 255);
+	SDL_RenderClear(la_rend);
+	
 	SDL_Surface * text_surface = NULL;
 	SDL_Rect finalScoreRect;
 	
@@ -297,20 +298,21 @@ void displayFinalScore(){
 	finalScoreRect.x = 100;
 	finalScoreRect.y = SCREEN_HEIGHT/2;
 	
-	SDL_BlitSurface(text_surface, NULL, gScreenSurface, &finalScoreRect);
-	SDL_UpdateWindowSurface(gWindow);
-
-	SDL_FreeSurface(text_surface);
-	text_surface = NULL;
+	auto temp_tex = SDL_CreateTextureFromSurface(la_rend, text_surface);
+	SDL_RenderCopy(la_rend, temp_tex, NULL, &finalScoreRect);
 	
+	SDL_DestroyTexture(temp_tex);temp_tex = NULL;
 	
+	SDL_FreeSurface(text_surface);text_surface = NULL;
+	
+	SDL_RenderPresent(la_rend);
 }
 
 void displayReplayScreen(){
-	SDL_Rect finalScoreRect;
+	SDL_Rect replayScreenTextPos;
 
-	SDL_FillRect(gCurrentSurface, NULL, skyblue);
-	SDL_BlitSurface(gCurrentSurface, NULL, gScreenSurface, NULL);
+	SDL_SetRenderDrawColor(la_rend, 65,193,193, 255);
+	SDL_RenderClear(la_rend);
 	
 	std::string replayText = "Press R to Replay";
 	SDL_Surface * text_surface = NULL;
@@ -318,17 +320,19 @@ void displayReplayScreen(){
 	text_surface = TTF_RenderText_Solid(font, replayText.c_str(), whiteColor);
 	assert(text_surface != NULL);
 	
-	finalScoreRect.w = text_surface->w; finalScoreRect.h = text_surface->h;
-	finalScoreRect.x = 75;
-	finalScoreRect.y = SCREEN_HEIGHT/2;
-	SDL_BlitSurface(text_surface, NULL, gScreenSurface, &finalScoreRect);
+	replayScreenTextPos.w = text_surface->w; replayScreenTextPos.h = text_surface->h;
+	replayScreenTextPos.x = 75; replayScreenTextPos.y = SCREEN_HEIGHT/2;
 	
-	SDL_UpdateWindowSurface(gWindow);
+	auto temp_tex = SDL_CreateTextureFromSurface(la_rend, text_surface);
 	
-	SDL_FreeSurface(text_surface);
-	text_surface = NULL;
-
+	SDL_RenderCopy(la_rend, temp_tex, NULL, &replayScreenTextPos);
+	
+	SDL_DestroyTexture(temp_tex); temp_tex = NULL;
+	SDL_FreeSurface(text_surface); text_surface = NULL;
+	
+	SDL_RenderPresent(la_rend);
 }
+
 int main( int argc, char* args[] )
 {
 	//Start up SDL and create window
@@ -347,9 +351,6 @@ int main( int argc, char* args[] )
 		{
 			//Event handler
 			SDL_Event e;
-			
-			//Set default current surface
-			gCurrentSurface = gKeyPressSurfaces[0]; //this will show the pic w/ up,down,right,left buttons
 			
 			//Main loop flag
 			bool replay = true;
@@ -515,12 +516,12 @@ int main( int argc, char* args[] )
 					
 					if(not replay) break;
 					
-					//Apply the current image
-					SDL_BlitSurface( gCurrentSurface, NULL, gScreenSurface, NULL );
+					auto la_tex = SDL_CreateTextureFromSurface(la_rend, gCurrentSurface);
 					
-					//Update the surface
-					SDL_UpdateWindowSurface( gWindow );
+					SDL_RenderCopy(la_rend, la_tex, NULL, NULL);
+					SDL_DestroyTexture(la_tex); la_tex = NULL;
 					
+					SDL_RenderPresent(la_rend);
 				}//while quit == false
 				
 				if(not replay) break;
@@ -528,13 +529,12 @@ int main( int argc, char* args[] )
 				SDL_Delay(500);
 				
 				bool finalScoreDisplayed = false;
-				bool userRequestedReplay = false;
-				int numOfSecondsPassed = 0;
+				bool passedTimeout = false;
+				Uint32 timeout = SDL_GetTicks() + 2500;
 				while(finalScoreDisplayed == false){
 					
 					const Uint8 * keyStates = SDL_GetKeyboardState(NULL);
 					while(SDL_PollEvent(&e)){
-						
 						if(e.type == SDL_QUIT){
 							finalScoreDisplayed = true;
 							replay = false;
@@ -547,36 +547,58 @@ int main( int argc, char* args[] )
 							break;
 						}
 						
-						if(numOfSecondsPassed <= 3){
-							if(SDL_RemoveTimer(timerID) == SDL_FALSE){
-								++numOfSecondsPassed;
-								createAndResetTimer();
-								break;
-							}//if remove timer == 0
-						}//if
-						
-						
-						if(keyStates[SDL_SCANCODE_R]){
-							std::cout << "R has been pressed \n";
-							userRequestedReplay = true;
+						if(SDL_TICKS_PASSED(SDL_GetTicks(), timeout)){
+							std::cout << "2.5 secs have passed. \n";
+
+							passedTimeout = true;
+							finalScoreDisplayed = true;
 							break;
-						}
+						}//if sdl ticks passed.
+						
 						
 					}//while poll event
 					
-					if(userRequestedReplay){
-						std::cout << "User has requested replay \n";
-						finalScoreDisplayed = true;
-					}
+					if(not replay) break;
 					
-					else if(not userRequestedReplay){
-						if(numOfSecondsPassed < 3)
-							displayFinalScore();
-						else if(numOfSecondsPassed >= 3)
-							displayReplayScreen();
-					}//else if user hasn't requested replay yet.
+					if(not finalScoreDisplayed)
+						displayFinalScore();
 					
 				}//while finalscoredisplayed != true
+				
+				if(not replay) break;
+				
+				bool replayScreenSeenByUser = false;
+				while(replayScreenSeenByUser == false){
+
+					while(SDL_PollEvent(&e)){
+						const Uint8 * keyStates = SDL_GetKeyboardState(NULL);
+						if(e.type == SDL_QUIT){
+							replayScreenSeenByUser = true;
+							replay = false;
+							break;
+						}
+
+						if(keyStates[SDL_SCANCODE_ESCAPE]){
+							replayScreenSeenByUser = true;
+							replay = false;
+							break;
+						}
+
+						if(keyStates[SDL_SCANCODE_R]){
+							replayScreenSeenByUser = true;
+							std::cout << "user has reqed to replay \n";
+							break;
+						}
+					}//while poll event.
+
+					if(not replay) break;
+
+					if(not replayScreenSeenByUser)
+						{displayReplayScreen();}
+
+
+				}//while not replayscreenshown.
+				
 				
 			}//while replay == true
 			
