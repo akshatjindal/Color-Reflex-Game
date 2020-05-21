@@ -434,48 +434,51 @@ int main( int argc, char* args[] )
 			bool replay = true;
 			while(replay == true){
 				SDL_Scancode userInput = SDL_SCANCODE_UNKNOWN;
-				const Uint8 * keyStates = SDL_GetKeyboardState(NULL);
-				while(SDL_PollEvent(&e)){
-					
-					if(keyStates[SDL_SCANCODE_ESCAPE]||e.type == SDL_QUIT){
-						replay = false;
-						break;
-					}//if user wants to quit the game.
-				
-					if(keyStates[SDL_SCANCODE_UP]||keyStates[SDL_SCANCODE_DOWN]||keyStates[SDL_SCANCODE_RIGHT]||keyStates[SDL_SCANCODE_LEFT]){
-						userInput = SDL_SCANCODE_UP;
-						break;
-					}//if one of the arrows.
-					
-					if(keyStates[SDL_SCANCODE_R]){userInput = SDL_SCANCODE_R; break;}//if.. R
-					if(keyStates[SDL_SCANCODE_W]){userInput = SDL_SCANCODE_W; break;}//if.. W
-					if(keyStates[SDL_SCANCODE_P]){userInput = SDL_SCANCODE_P; break;}//if.. P
-					if(keyStates[SDL_SCANCODE_G]){userInput = SDL_SCANCODE_G; break;}//if.. G
-					if(keyStates[SDL_SCANCODE_B]){userInput = SDL_SCANCODE_B; break;}//if.. B
-					if(keyStates[SDL_SCANCODE_Y]){userInput = SDL_SCANCODE_Y; break;}//if.. Y
 
+				while(SDL_PollEvent(&e)){
+					auto keyPressed = e.key.keysym.scancode;
+				
+					if(e.type == SDL_QUIT){
+						replay = false; break;
+					}
+					
+					if(e.type == SDL_KEYDOWN){
+						if(keyPressed == SDL_SCANCODE_ESCAPE){replay = false; break;}//if...
+						if(keyPressed == SDL_SCANCODE_RIGHT || keyPressed == SDL_SCANCODE_LEFT
+						   ||keyPressed == SDL_SCANCODE_UP || keyPressed == SDL_SCANCODE_DOWN){userInput = SDL_SCANCODE_UP;break;};//if one of the arrows.
+						
+						if(keyPressed == SDL_SCANCODE_R){userInput = keyPressed;break;}
+						if(keyPressed == SDL_SCANCODE_Y){userInput = keyPressed;break;}
+						if(keyPressed == SDL_SCANCODE_G){userInput = keyPressed;break;}
+						if(keyPressed == SDL_SCANCODE_B){userInput = keyPressed;break;}
+						if(keyPressed == SDL_SCANCODE_W){userInput = keyPressed;break;}
+						if(keyPressed == SDL_SCANCODE_P){userInput = keyPressed;break;}
+
+					}//if keydown
 
 				}//while poll event.
 				
+				if(not replay) break;
 				if(not user_lost_the_game){
 					
 					if(userInput != SDL_SCANCODE_UNKNOWN){
 						game(userInput);
-						SDL_PumpEvents();
 					}
+					
+				
 				}//if the user hasn't lost the game yet.
 				
 				else if(user_lost_the_game){
-//					displayFinalScore();
+					displayFinalScore();
 //					displayReplayScreen();
 				}//else if the user has lost the game.
-				
 				
 				auto la_tex = SDL_CreateTextureFromSurface(la_rend, gCurrentSurface);
 				SDL_RenderCopy(la_rend, la_tex, NULL, NULL);
 				SDL_DestroyTexture(la_tex); la_tex = NULL;
 				std::cout << "renderer updated w/ " <<correctColor<<"\n";
 				SDL_RenderPresent(la_rend);
+				
 			}//while replay == true
 			
 			
