@@ -11,7 +11,7 @@
 #include <iostream>
 #include <random>
 
-#define TIMELIM 1
+#define TIMELIM 5
 
 //Screen dimension constants
 const int SCREEN_WIDTH = 480;
@@ -72,8 +72,9 @@ SDL_Color whiteColor = {255,255,255};
 
 SDL_Renderer * la_rend;
 SDL_Event e;
-const Uint8 * keyStates = NULL;
-bool quit = false;
+//const Uint8 * keyStates = NULL;
+bool quit = false;	bool user_lost_the_game = false;
+
 
 bool init()
 {
@@ -224,17 +225,17 @@ SDL_Surface* loadSurface( std::string path )
 	return loadedSurface;
 }
 
-bool correct_color_pressed(const std::string& color_in, const std::string & current_correct_color){
+bool correct_color_pressed(const std::string& color_in){
 	
 	bool flag = false;
-	if(current_correct_color == color_in)
+	if(correctColor == color_in)
 		flag = true;
 	
 	if(flag)
-		std::cout << "the correct color: " << current_correct_color <<" was pressed\n";
+		std::cout << "the correct color: " << correctColor <<" was pressed\n";
 	
 	if(not flag){
-		std::cout << "you pressed " << color_in[0] << " instead of " << current_correct_color[0] << "\n";
+		std::cout << "you pressed " << color_in[0] << " instead of " << correctColor[0] << "\n";
 		std::cout << "the correct color was NOT pressed\n";
 		
 	}//if not flag
@@ -264,23 +265,15 @@ Uint32 callback(Uint32 interval, void* param){
 }
 
 void createAndResetTimer(){
-	if(not arrowPressedYet)
-		return ;
 	
-	std::cout << "debug0 \n";
+	std::cout << "debug createandresettimer \n";
 	SDL_RemoveTimer(timerID);
 	timerID = SDL_AddTimer(TIMELIM * 1000, callback, (void*) "TIMELIM REACHED!" );
 }
 
-void createTimerTwo(){
-	std::cout << "debug timer two\n";
-	SDL_RemoveTimer(timerTwo);
-	timerTwo = SDL_AddTimer(3.0 * 1000, callback, (void*) "timer two called");
-}
+
 void displayFinalScore(){
-	//MARK: displayfinalscore()
-	//MARK: displayfinalscore()
-	//MARK: displayfinalscore()
+	
 
 	std::cout << "debug Final Score"<< "\n";
 	
@@ -335,45 +328,83 @@ void displayReplayScreen(){
 	SDL_RenderPresent(la_rend);
 }
 
-while(poll event){
-	game()
-	finalscorescreen()
-	replayscreen()
-}
+//while(poll event){
+//	game()
+//	finalscorescreen()
+//	replayscreen()
+//}
 
-bool userPressedOneOfTheArrows(){
-	assert(keyStates != NULL);
+bool userPressedOneOfTheArrows(SDL_Scancode _key){
 	bool flag = false;
-	
-	if(keyStates[SDL_SCANCODE_UP] || keyStates[SDLK_DOWN]
-	   || keyStates[SDL_SCANCODE_RIGHT] || keyStates[SDL_SCANCODE_LEFT])
+	if(_key == SDL_SCANCODE_UP)
 		flag = true;
-	
 	return flag;
 }
 
+bool UserHasLostGameHelper(std::string _color){
+	bool flag = false;
+	if(SDL_RemoveTimer(timerID) == SDL_FALSE){
+		std::cout << "debug " << _color << std::endl;
+		flag = true;
+	}
+	
+	else if( not correct_color_pressed(_color))flag = true;
+	
+	return flag;
+}//game helper func()
 
-
-std::pair<bool,bool> game(){
-	
-	bool userWantsToExitGame = false;
-	bool user_lost_the_game = false;
-	
-	
-	keyStates = SDL_GetKeyboardState(NULL);
-	if(e.type == SDL_QUIT){userWantsToExitGame = true;}
+void game(SDL_Scancode _keypressed){
+	//MARK: game()
+	//MARK: game()
+	//MARK: game()
+	assert(not user_lost_the_game);
 	
 	//		check if a certain letter or arrow has been PressedYet
 	//		render accordingly until player loses (Gets something wrong)
 	
-	if(not arrowPressedYet && userPressedOneOfTheArrows() == true){
+	if(not arrowPressedYet && userPressedOneOfTheArrows(_keypressed) == true){
 		generateRandomSurface(); createAndResetTimer();
 		arrowPressedYet = true;
-	}//if
+	}//if userpressed one of the arrows given
 	
 	
+	else if(_keypressed == SDL_SCANCODE_R){
+		if(UserHasLostGameHelper("red") == true){
+			user_lost_the_game = true;
+			return;
+		}//if user has lost game
+		else{
+			++score;
+			generateRandomSurface();
+			createAndResetTimer();
+		}//else if user didn't press the wrong button or run outta time
+	}//if.. red
 	
-	return std::make_pair(userWantsToExitGame, user_lost_the_game);
+	else if(_keypressed == SDL_SCANCODE_W){
+		if(UserHasLostGameHelper("white") == true){user_lost_the_game = true;return;}//if user has lost game
+		else{++score; generateRandomSurface(); createAndResetTimer();}//else if user didn't press the wrong button or run outta time
+	}//if.. white
+	
+	else if(_keypressed == SDL_SCANCODE_B){
+		if(UserHasLostGameHelper("blue") == true){user_lost_the_game = true;return;}//if user has lost game
+		else{++score; generateRandomSurface(); createAndResetTimer();}//else if user didn't press the wrong button or run outta time
+	}//if.. blue
+	
+	else if(_keypressed == SDL_SCANCODE_P){
+		if(UserHasLostGameHelper("pink") == true){user_lost_the_game = true;return;}//if user has lost game
+		else{++score; generateRandomSurface(); createAndResetTimer(); }//else if user didn't press the wrong button or run outta time
+	}//if.. pink
+	
+	
+	else if(_keypressed == SDL_SCANCODE_Y){
+		if(UserHasLostGameHelper("yellow") == true){user_lost_the_game = true;return;}//if user has lost game
+		else{++score; generateRandomSurface(); createAndResetTimer();}//else if user didn't press the wrong button or run outta time
+	}//if.. yellow
+	
+	else if(_keypressed == SDL_SCANCODE_G){
+		if(UserHasLostGameHelper("green") == true){user_lost_the_game = true;return;}//if user has lost game
+		else{++score; generateRandomSurface(); createAndResetTimer();}//else if user didn't press the wrong button or run outta time
+	}//if.. green
 	
 }
 
@@ -393,27 +424,58 @@ int main( int argc, char* args[] )
 		}
 		else
 		{
+			gCurrentSurface = gKeyPressSurfaces[0]; //the up/down/left/right arrow pic.
+			auto la_tex = SDL_CreateTextureFromSurface(la_rend, gCurrentSurface);
+			
+			SDL_RenderCopy(la_rend, la_tex, NULL, NULL);
+			SDL_DestroyTexture(la_tex); la_tex = NULL;
+			
+			SDL_RenderPresent(la_rend);
 			bool replay = true;
 			while(replay == true){
-				
+				SDL_Scancode userInput = SDL_SCANCODE_UNKNOWN;
+				const Uint8 * keyStates = SDL_GetKeyboardState(NULL);
 				while(SDL_PollEvent(&e)){
 					
-					auto pair = game();
-					
-					if(pair.first == true){
+					if(keyStates[SDL_SCANCODE_ESCAPE]||e.type == SDL_QUIT){
 						replay = false;
 						break;
-					}//if player wants to quit game.
-					
-					else{
-						if(pair.second){
-							displayFinalScore();
-							displayReplayScreen();
-						}//if player has lost the game
-					}//else if the player doesn't wanna quit game.
+					}//if user wants to quit the game.
 				
+					if(keyStates[SDL_SCANCODE_UP]||keyStates[SDL_SCANCODE_DOWN]||keyStates[SDL_SCANCODE_RIGHT]||keyStates[SDL_SCANCODE_LEFT]){
+						userInput = SDL_SCANCODE_UP;
+						break;
+					}//if one of the arrows.
+					
+					if(keyStates[SDL_SCANCODE_R]){userInput = SDL_SCANCODE_R; break;}//if.. R
+					if(keyStates[SDL_SCANCODE_W]){userInput = SDL_SCANCODE_W; break;}//if.. W
+					if(keyStates[SDL_SCANCODE_P]){userInput = SDL_SCANCODE_P; break;}//if.. P
+					if(keyStates[SDL_SCANCODE_G]){userInput = SDL_SCANCODE_G; break;}//if.. G
+					if(keyStates[SDL_SCANCODE_B]){userInput = SDL_SCANCODE_B; break;}//if.. B
+					if(keyStates[SDL_SCANCODE_Y]){userInput = SDL_SCANCODE_Y; break;}//if.. Y
+
+
 				}//while poll event.
 				
+				if(not user_lost_the_game){
+					
+					if(userInput != SDL_SCANCODE_UNKNOWN){
+						game(userInput);
+						SDL_PumpEvents();
+					}
+				}//if the user hasn't lost the game yet.
+				
+				else if(user_lost_the_game){
+//					displayFinalScore();
+//					displayReplayScreen();
+				}//else if the user has lost the game.
+				
+				
+				auto la_tex = SDL_CreateTextureFromSurface(la_rend, gCurrentSurface);
+				SDL_RenderCopy(la_rend, la_tex, NULL, NULL);
+				SDL_DestroyTexture(la_tex); la_tex = NULL;
+				std::cout << "renderer updated w/ " <<correctColor<<"\n";
+				SDL_RenderPresent(la_rend);
 			}//while replay == true
 			
 			
