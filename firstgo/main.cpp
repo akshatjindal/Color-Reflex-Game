@@ -11,7 +11,7 @@
 #include <iostream>
 #include <random>
 
-#define TIMELIM 5
+#define TIMELIM 1
 
 //Screen dimension constants
 const int SCREEN_WIDTH = 480;
@@ -74,6 +74,9 @@ SDL_Renderer * la_rend;
 SDL_Event e;
 //const Uint8 * keyStates = NULL;
 bool quit = false;	bool user_lost_the_game = false;
+bool userWantsToReplayNow = false;
+
+Uint32 start = 0;
 
 
 bool init()
@@ -303,13 +306,16 @@ void displayFinalScore(){
 	SDL_RenderPresent(la_rend);
 }
 
-void displayReplayScreen(){
+void displayReplayScreen(SDL_Scancode _keypressed){
+	
+	if(_keypressed == SDL_SCANCODE_R){userWantsToReplayNow = true;}//if
+	
 	SDL_Rect replayScreenTextPos;
 
 	SDL_SetRenderDrawColor(la_rend, 65,193,193, 255);
 	SDL_RenderClear(la_rend);
 	
-	std::string replayText = "Press R to Replay";
+	std::string replayText = "Press R: PLAY AGAIN";
 	SDL_Surface * text_surface = NULL;
 
 	text_surface = TTF_RenderText_Solid(font, replayText.c_str(), whiteColor);
@@ -424,6 +430,7 @@ int main( int argc, char* args[] )
 		}
 		else
 		{
+			
 			gCurrentSurface = gKeyPressSurfaces[0]; //the up/down/left/right arrow pic.
 			auto la_tex = SDL_CreateTextureFromSurface(la_rend, gCurrentSurface);
 			
@@ -431,7 +438,7 @@ int main( int argc, char* args[] )
 			SDL_DestroyTexture(la_tex); la_tex = NULL;
 			
 			SDL_RenderPresent(la_rend);
-			bool replay = true;
+			bool replay = true; bool scoreNotDisplayed = true;
 			while(replay == true){
 				SDL_Scancode userInput = SDL_SCANCODE_UNKNOWN;
 
@@ -465,19 +472,51 @@ int main( int argc, char* args[] )
 						game(userInput);
 					}
 					
-				
+					auto la_tex = SDL_CreateTextureFromSurface(la_rend, gCurrentSurface);
+					SDL_RenderCopy(la_rend, la_tex, NULL, NULL);
+					SDL_DestroyTexture(la_tex); la_tex = NULL;
+					std::cout << "renderer updated w/ " <<correctColor<<"\n";
+					SDL_RenderPresent(la_rend);
 				}//if the user hasn't lost the game yet.
 				
 				else if(user_lost_the_game){
-					displayFinalScore();
-//					displayReplayScreen();
+					
+					if(scoreNotDisplayed){
+						displayFinalScore();
+						start = SDL_GetTicks();
+						scoreNotDisplayed = false;
+					}//if score hasn't been displayed at all.
+					
+					else if(scoreNotDisplayed == false){
+						if(SDL_TICKS_PASSED(SDL_GetTicks(), start+2000) == true){
+							std::cout<<"sdl ticks passed. "<<"\n";
+							displayReplayScreen(userInput);
+							
+							if(userWantsToReplayNow){
+								score = 0;
+								user_lost_the_game = false;
+								userWantsToReplayNow = false;
+								scoreNotDisplayed = true;
+								replay = true;
+								arrowPressedYet = false;
+								std::cout << "replaying" << "\n";
+								gCurrentSurface = gKeyPressSurfaces[0]; //the up/down/left/right arrow pic.
+								auto la_tex = SDL_CreateTextureFromSurface(la_rend, gCurrentSurface);
+								
+								SDL_RenderCopy(la_rend, la_tex, NULL, NULL);
+								SDL_DestroyTexture(la_tex); la_tex = NULL;
+								
+								SDL_RenderPresent(la_rend);
+							}//if user wants to replay now.
+						}//if
+						
+						else{displayFinalScore();}//else if..sdl ticks passed is false.
+						
+					}//else if... score has been displayed.
+					
 				}//else if the user has lost the game.
 				
-				auto la_tex = SDL_CreateTextureFromSurface(la_rend, gCurrentSurface);
-				SDL_RenderCopy(la_rend, la_tex, NULL, NULL);
-				SDL_DestroyTexture(la_tex); la_tex = NULL;
-				std::cout << "renderer updated w/ " <<correctColor<<"\n";
-				SDL_RenderPresent(la_rend);
+				
 				
 			}//while replay == true
 			
